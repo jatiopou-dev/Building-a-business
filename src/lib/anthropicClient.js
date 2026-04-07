@@ -22,13 +22,33 @@ The text presents a profound shift in theological understanding. In examining th
 `;
   }
 
-  // Real API Logic (Ready for when API key is provided)
+  // Define strict system rules for orthodox theology and formatting
+  const systemPrompt = `You are an expert orthodox theological assistant, homiletician, and biblical scholar. 
+Your purpose is to assist pastors in rigorous sermon preparation by generating deep, historical, and dogmatic insights.
+Always produce output that is deeply rooted in robust, historical Christian orthodoxy. Never provide superficial or cliché answers.
+Focus on rigorous exegesis, historical context, and profound pastoral theology.
+YOU MUST follow these strict formatting rules:
+1. Always begin your response with YAML frontmatter.
+2. Employ structured hierarchical Markdown (H1, H2, H3).
+3. Every primary insight should be substantiated with deep theological rationale or biblical cross-references.
+4. Provide the exact raw markdown meant to be saved as an Obsidian .md file, without any conversational preamble or postscript.`;
+
+  const safeTitle = passage ? passage.replace(/"/g, "'") : "Passage";
+  const safeDate = new Date().toISOString().split('T')[0];
+  const formattedStyle = styleMode ? styleMode.toLowerCase() : "theology";
+
   const prompt = `
-    You are a theological assistant. 
-    Analyze the biblical passage: ${passage}. 
-    Focus on the theme: ${theme}. 
-    Produce a ${styleMode} output structured perfectly in Markdown using H1, H2, and bullet points.
-    Ensure exegesis is accurate and rooted in orthodox theology.
+Please synthesize a deep, scholarly analysis based on the following parameters:
+- **Biblical Passage / Concept**: ${passage}
+- **Constraints & Focus Theme**: ${theme}
+- **Processing Style**: ${styleMode}
+
+Output perfectly structured Markdown ready for my Obsidian Vault. Ensure you include standard YAML frontmatter at the absolute top of your response containing:
+---
+title: "${safeTitle} - ${styleMode}"
+tags: [theology, ${formattedStyle}, sermonForge]
+date: "${safeDate}"
+---
   `;
 
   try {
@@ -42,7 +62,8 @@ The text presents a profound shift in theological understanding. In examining th
       },
       body: JSON.stringify({
         model: "claude-3-5-sonnet-20240620",
-        max_tokens: 1500,
+        max_tokens: 2500,
+        system: systemPrompt,
         messages: [{ role: "user", content: prompt }]
       })
     });

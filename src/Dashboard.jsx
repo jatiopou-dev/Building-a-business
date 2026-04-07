@@ -26,6 +26,26 @@ export default function Dashboard() {
     navigate('/login')
   }
 
+  const handleExportObsidian = () => {
+    if (!output) return;
+    
+    const vaultName = encodeURIComponent("The Well");
+    
+    let title = "Theological Insight";
+    const titleMatch = output.match(/title:\s*"?([^"\n]+)"?/);
+    if (titleMatch && titleMatch[1]) {
+      title = titleMatch[1];
+    } else if (passage) {
+      title = `${passage} - ${styleMode}`;
+    }
+    
+    const fileName = encodeURIComponent(title);
+    const content = encodeURIComponent(output);
+    const obsidianUri = `obsidian://new?vault=${vaultName}&file=${fileName}&content=${content}`;
+    
+    window.location.href = obsidianUri;
+  }
+
   const handleGenerate = async (e) => {
     e.preventDefault()
     setIsGenerating(true)
@@ -190,7 +210,10 @@ export default function Dashboard() {
                      <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', color: 'var(--accent-neon-indigo)' }}>
                         Generated Output
                      </h3>
-                     <button className="chip" onClick={() => navigator.clipboard.writeText(output)}>Copy Markdown</button>
+                     <div style={{ display: 'flex', gap: '8px' }}>
+                        <button className="chip" onClick={() => navigator.clipboard.writeText(output)}>Copy Markdown</button>
+                        <button className="chip" style={{ background: 'var(--accent-neon-purple)', color: 'white', border: 'none' }} onClick={handleExportObsidian}>Send to Obsidian</button>
+                     </div>
                   </div>
                   <div style={{ 
                      background: 'rgba(0,0,0,0.4)', 
