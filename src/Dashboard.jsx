@@ -23,6 +23,9 @@ export default function Dashboard() {
   const [seriesData, setSeriesData] = useState(null)
   const [isArchitecting, setIsArchitecting] = useState(false)
   
+  const [isPro, setIsPro] = useState(null)
+  const [genCount, setGenCount] = useState(0)
+  
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -31,9 +34,24 @@ export default function Dashboard() {
         setUserEmail(session.user.email)
         setUserId(session.user.id)
         fetchHistory(session.user.id)
+        fetchSubscription(session.user.id)
       }
     })
   }, [])
+
+  const fetchSubscription = async (uid) => {
+    const { data } = await supabase
+      .from('subscriptions')
+      .select('status')
+      .eq('user_id', uid)
+      .maybeSingle(); // maybeSingle instead of single prevents error logging if no record exists
+      
+    if (data && data.status === 'active') {
+      setIsPro(true);
+    } else {
+      setIsPro(false);
+    }
+  }
 
   const fetchHistory = async (uid) => {
     const { data, error } = await supabase
@@ -44,6 +62,7 @@ export default function Dashboard() {
     
     if (!error && data) {
       setHistory(data);
+      setGenCount(data.length);
     }
   }
 
@@ -118,6 +137,7 @@ export default function Dashboard() {
         
       if (!error && data) {
          setHistory(prev => [data[0], ...prev])
+         setGenCount(prev => prev + 1)
       } else {
          console.error("Error saving history:", error)
       }
@@ -241,9 +261,22 @@ export default function Dashboard() {
           </section>
 
           <div className="grid-layout">
-            {/* Input Form */}
-            {activeTab === 'exegesis' ? (
-            <form className="glass-panel input-panel" onSubmit={handleGenerate}>
+            {isPro === false && genCount >= 3 ? (
+              <div className="glass-panel" style={{ textAlign: 'center', padding: '60px 40px', gridColumn: '1 / -1' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent-neon-purple)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                </div>
+                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', marginBottom: '16px', color: 'var(--accent-neon-purple)' }}>Unlimited Architectural Power</h2>
+                <p style={{ color: 'var(--text-secondary)', marginBottom: '32px', maxWidth: '500px', margin: '0 auto 32px auto' }}>You've exhausted your 3 free generations. Upgrade to SermonForge Pro to unlock unlimited Exegetical Insights and Full Series Architecture.</p>
+                <a href={`https://buy.stripe.com/test_STRIPEOUTPUT_PAYMENT_LINK?client_reference_id=${userId}`} target="_blank" rel="noreferrer" className="action-btn" style={{ textDecoration: 'none', display: 'inline-block' }}>
+                  Upgrade to Pro
+                </a>
+              </div>
+            ) : (
+             <>
+              {/* Input Form */}
+              {activeTab === 'exegesis' ? (
+              <form className="glass-panel input-panel" onSubmit={handleGenerate}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', fontWeight: 600 }}>
                    AI Theological Assistant
@@ -457,6 +490,8 @@ export default function Dashboard() {
                 </>
               )}
             </div>
+           </>
+          )}
           </div>
         </div>
       </main>
