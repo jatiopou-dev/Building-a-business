@@ -1,4 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { supabase } from './lib/supabaseClient'
 import './Dashboard.css'
 import { generateTheologicalInsight } from './lib/anthropicClient'
 
@@ -8,6 +10,21 @@ export default function Dashboard() {
   const [styleMode, setStyleMode] = useState('Exegetical')
   const [isGenerating, setIsGenerating] = useState(false)
   const [output, setOutput] = useState('')
+  const [userEmail, setUserEmail] = useState('Loading...')
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setUserEmail(session.user.email)
+      }
+    })
+  }, [])
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    navigate('/login')
+  }
 
   const handleGenerate = async (e) => {
     e.preventDefault()
@@ -80,14 +97,13 @@ export default function Dashboard() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.05)', padding: '6px 16px 6px 6px', borderRadius: '30px', border: '1px solid rgba(255,255,255,0.1)' }}>
                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg, #f59e0b, #d97706)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.9rem' }}>
-                  JM
+                  {userEmail !== 'Loading...' && userEmail ? userEmail.charAt(0).toUpperCase() : 'U'}
                </div>
-               <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>Athanasius M.</span>
+               <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>{userEmail.split('@')[0]}</span>
             </div>
             
-            <button style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', position: 'relative' }}>
-               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-               <div style={{ position: 'absolute', top: '8px', right: '10px', width: '8px', height: '8px', background: 'var(--accent-neon-purple)', borderRadius: '50%', border: '2px solid var(--bg-color)' }}></div>
+            <button onClick={handleSignOut} title="Sign Out" style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', position: 'relative', cursor: 'pointer', transition: 'all 0.2s' }} onMouseOver={(e) => { e.currentTarget.style.color = 'white'; e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)' }} onMouseOut={(e) => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}>
+               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
             </button>
           </div>
         </header>
