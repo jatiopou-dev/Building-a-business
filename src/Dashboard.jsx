@@ -11,15 +11,31 @@ export default function Dashboard() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [output, setOutput] = useState('')
   const [userEmail, setUserEmail] = useState('Loading...')
+  const [userId, setUserId] = useState(null)
+  const [history, setHistory] = useState([])
   const navigate = useNavigate()
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         setUserEmail(session.user.email)
+        setUserId(session.user.id)
+        fetchHistory(session.user.id)
       }
     })
   }, [])
+
+  const fetchHistory = async (uid) => {
+    const { data, error } = await supabase
+      .from('sermon_history')
+      .select('id, title, content, style_mode, created_at')
+      .eq('user_id', uid)
+      .order('created_at', { ascending: false });
+    
+    if (!error && data) {
+      setHistory(data);
+    }
+  }
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -68,8 +84,35 @@ export default function Dashboard() {
     
     // Call the AI Service
     const result = await generateTheologicalInsight(passage, theme, styleMode)
-    
     setOutput(result)
+    
+    // Save to history automatically
+    let title = "Theological Insight";
+    const titleMatch = result.match(/title:\s*"?([^"\n]+)"?/);
+    if (titleMatch && titleMatch[1]) {
+      title = titleMatch[1];
+    } else if (passage) {
+      title = `${passage} - ${styleMode}`;
+    }
+
+    if (userId) {
+      const { data, error } = await supabase
+        .from('sermon_history')
+        .insert([{
+          user_id: userId,
+          title: title,
+          content: result,
+          style_mode: styleMode
+        }])
+        .select()
+        
+      if (!error && data) {
+         setHistory(prev => [data[0], ...prev])
+      } else {
+         console.error("Error saving history:", error)
+      }
+    }
+    
     setIsGenerating(false)
   }
 
@@ -98,9 +141,18 @@ export default function Dashboard() {
             Research Projects
           </a>
           
-          <div style={{ paddingLeft: '44px', display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '4px', marginBottom: '16px' }}>
-             <a href="#" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontSize: '0.9rem', transition: 'color 0.2s' }}>Genesis Study</a>
-             <a href="#" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontSize: '0.9rem', transition: 'color 0.2s' }}>Aquinas Volume</a>
+          <div style={{ paddingLeft: '44px', display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '4px', marginBottom: '16px', maxHeight: '30vh', overflowY: 'auto' }}>
+            {history.map(item => (
+               <a 
+                 key={item.id} 
+                 href="#" 
+                 onClick={(e) => { e.preventDefault(); setOutput(item.content); setStyleMode(item.style_mode || 'Exegetical'); }}
+                 style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontSize: '0.85rem', transition: 'color 0.2s', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}
+               >
+                 {item.title}
+               </a>
+            ))}
+            {history.length === 0 && <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontStyle: 'italic' }}>No projects yet</span>}
           </div>
 
           <a href="#" className="nav-item">
