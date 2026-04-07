@@ -31,8 +31,8 @@ export default function Dashboard() {
       {/* Sidebar Navigation */}
       <aside className="sidebar">
         <div className="logo-container animate-fade-in">
-          <div className="logo-icon">T</div>
-          <div className="logo-text">Theos <span style={{color: 'var(--accent-neon-indigo)', fontWeight: '800'}}>AI</span></div>
+          <div className="logo-icon">S</div>
+          <div className="logo-text">Sermon<span style={{color: 'var(--accent-neon-indigo)', fontWeight: '800'}}>Forge</span></div>
         </div>
         
         <nav className="nav-menu">
@@ -75,7 +75,7 @@ export default function Dashboard() {
       {/* Main Container */}
       <main className="main-content">
         <header className="top-header">
-          <div className="header-title" style={{ opacity: 0 }}>Theos AI</div>
+          <div className="header-title" style={{ opacity: 0 }}>SermonForge</div>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.05)', padding: '6px 16px 6px 6px', borderRadius: '30px', border: '1px solid rgba(255,255,255,0.1)' }}>

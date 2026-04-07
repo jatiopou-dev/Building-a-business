@@ -37,9 +37,9 @@ export default function LandingPage() {
 
       <nav className="landing-nav animate-fade-in">
         <div className="landing-logo">
-          <div className="logo-badge">T</div>
+          <div className="logo-badge">S</div>
           <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.25rem' }}>
-            Theos <span style={{ color: 'var(--accent-neon-indigo)' }}>AI</span>
+            Sermon<span style={{ color: 'var(--accent-neon-indigo)' }}>Forge</span>
           </span>
         </div>
         
@@ -112,7 +112,7 @@ export default function LandingPage() {
       </main>
       
       <footer className="footer">
-        © 2026 Theos AI. Built with vision.
+        © 2026 SermonForge. Built with vision.
       </footer>
     </div>
   );
