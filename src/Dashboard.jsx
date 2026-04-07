@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from './lib/supabaseClient'
 import './Dashboard.css'
-import { generateTheologicalInsight } from './lib/anthropicClient'
+import { generateTheologicalInsight, architectSermonSeries } from './lib/anthropicClient'
 
 export default function Dashboard() {
   const [passage, setPassage] = useState('')
@@ -13,6 +13,16 @@ export default function Dashboard() {
   const [userEmail, setUserEmail] = useState('Loading...')
   const [userId, setUserId] = useState(null)
   const [history, setHistory] = useState([])
+  
+  const [activeTab, setActiveTab] = useState('exegesis')
+  const [lens, setLens] = useState('Generic')
+  
+  const [seriesBook, setSeriesBook] = useState('')
+  const [seriesTheme, setSeriesTheme] = useState('')
+  const [seriesDuration, setSeriesDuration] = useState(4)
+  const [seriesData, setSeriesData] = useState(null)
+  const [isArchitecting, setIsArchitecting] = useState(false)
+  
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -83,7 +93,7 @@ export default function Dashboard() {
     setIsGenerating(true)
     
     // Call the AI Service
-    const result = await generateTheologicalInsight(passage, theme, styleMode)
+    const result = await generateTheologicalInsight(passage, theme, styleMode, lens)
     setOutput(result)
     
     // Save to history automatically
@@ -114,6 +124,20 @@ export default function Dashboard() {
     }
     
     setIsGenerating(false)
+  }
+
+  const handleArchitect = async (e) => {
+    e.preventDefault()
+    setIsArchitecting(true)
+    const result = await architectSermonSeries(seriesBook, seriesDuration, seriesTheme, lens)
+    setSeriesData(result)
+    setIsArchitecting(false)
+  }
+
+  const handleExpandWeek = (weekData) => {
+    setPassage(weekData.passage)
+    setTheme(weekData.subtheme + " (Context: " + seriesTheme + ")")
+    setActiveTab('exegesis')
   }
 
   return (
@@ -198,12 +222,27 @@ export default function Dashboard() {
 
         <div className="workspace animate-fade-in" style={{ animationDelay: '0.1s' }}>
           <section className="hero-section">
-            <h1 className="hero-title">Research <span className="text-gradient-neon">Insights.</span></h1>
-            <p className="hero-subtitle">Synthesize theological concepts, map semantic relationships, and generate structured output for your Obsidian Vault.</p>
+            <div style={{ display: 'flex', gap: '16px', marginBottom: '24px', justifyContent: 'center' }}>
+               <button className={`chip ${activeTab === 'exegesis' ? 'selected' : ''}`} onClick={() => setActiveTab('exegesis')}>Exegetical Assistant</button>
+               <button className={`chip ${activeTab === 'architect' ? 'selected' : ''}`} onClick={() => setActiveTab('architect')}>Series Architect</button>
+            </div>
+            
+            {activeTab === 'exegesis' ? (
+              <>
+                <h1 className="hero-title">Research <span className="text-gradient-neon">Insights.</span></h1>
+                <p className="hero-subtitle">Synthesize theological concepts, map semantic relationships, and generate structured output for your Obsidian Vault.</p>
+              </>
+            ) : (
+              <>
+                <h1 className="hero-title">Sermon <span className="text-gradient-neon">Architect.</span></h1>
+                <p className="hero-subtitle">Map out entire multi-week theological arcs flawlessly tailored to your church context.</p>
+              </>
+            )}
           </section>
 
           <div className="grid-layout">
             {/* Input Form */}
+            {activeTab === 'exegesis' ? (
             <form className="glass-panel input-panel" onSubmit={handleGenerate}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', fontWeight: 600 }}>
@@ -233,6 +272,18 @@ export default function Dashboard() {
                   value={theme}
                   onChange={(e) => setTheme(e.target.value)}
                 ></textarea>
+              </div>
+              
+              <div className="form-group">
+                 <label className="form-label">Theological Framework / Lens</label>
+                 <select className="form-input" value={lens} onChange={e => setLens(e.target.value)} style={{ padding: '12px' }}>
+                   <option value="Generic">Generic / Broad</option>
+                   <option value="Reformed Tradition">Reformed Tradition</option>
+                   <option value="Patristic Era">Patristic Era</option>
+                   <option value="Thomistic / Scholastic">Thomistic / Scholastic</option>
+                   <option value="Contemporary Evangelical">Contemporary Evangelical</option>
+                   <option value="Eastern Orthodox">Eastern Orthodox</option>
+                 </select>
               </div>
 
               <div>
@@ -268,10 +319,64 @@ export default function Dashboard() {
                 </button>
               </div>
             </form>
+            ) : (
+            <form className="glass-panel input-panel" onSubmit={handleArchitect}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                 <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', fontWeight: 600 }}>
+                   Series Architect
+                 </h3>
+                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent-neon-cyan)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+              </div>
+              
+              <div className="form-group">
+                 <label className="form-label">Biblical Book or Discourse</label>
+                 <input type="text" className="form-input" placeholder="e.g. Gospel of John (Ch 1-5)" value={seriesBook} onChange={(e) => setSeriesBook(e.target.value)} required />
+              </div>
+              <div className="form-group">
+                 <label className="form-label">Overarching Series Theme</label>
+                 <input type="text" className="form-input" placeholder="e.g. Light in the Darkness" value={seriesTheme} onChange={(e) => setSeriesTheme(e.target.value)} required />
+              </div>
+              <div className="form-group">
+                 <label className="form-label">Duration (Weeks)</label>
+                 <input type="number" min="2" max="12" className="form-input" value={seriesDuration} onChange={(e) => setSeriesDuration(e.target.value)} required />
+              </div>
+              
+              <div className="form-group">
+                 <label className="form-label">Theological Framework / Lens</label>
+                 <select className="form-input" value={lens} onChange={e => setLens(e.target.value)} style={{ padding: '12px' }}>
+                   <option value="Generic">Generic / Broad</option>
+                   <option value="Reformed Tradition">Reformed Tradition</option>
+                   <option value="Patristic Era">Patristic Era</option>
+                   <option value="Thomistic / Scholastic">Thomistic / Scholastic</option>
+                   <option value="Contemporary Evangelical">Contemporary Evangelical</option>
+                   <option value="Eastern Orthodox">Eastern Orthodox</option>
+                 </select>
+              </div>
+
+              <div style={{ display: 'flex', marginTop: '16px' }}>
+                <button type="submit" className={`action-btn ${isArchitecting ? 'animate-pulse' : ''}`} disabled={isArchitecting} style={{ flex: 1, justifyContent: 'center' }}>
+                  {isArchitecting ? 'Architecting Series...' : 'Build Timeline'}
+                </button>
+              </div>
+            </form>
+            )}
 
             {/* Sidebar Context */}
             <div className="side-panel">
-              {output ? (
+              {activeTab === 'architect' && seriesData ? (
+                 <div className="glass-panel" style={{ flex: 1, overflowY: 'auto' }}>
+                    <h3 style={{ color: 'var(--accent-neon-indigo)', marginBottom: '16px', fontFamily: 'var(--font-display)', fontSize: '1.2rem' }}>{seriesData.title}</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {seriesData.weeks && seriesData.weeks.map(week => (
+                        <div key={week.week} className="animate-fade-in" style={{ background: 'rgba(0,0,0,0.3)', padding: '16px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', animationDelay: `${week.week * 0.1}s` }}>
+                           <div style={{ fontWeight: 'bold', color: 'var(--accent-neon-cyan)', marginBottom: '4px' }}>Week {week.week}: {week.passage}</div>
+                           <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '12px' }}>{week.subtheme}</div>
+                           <button onClick={() => handleExpandWeek(week)} className="chip" style={{ fontSize: '0.8rem', background: 'rgba(99, 102, 241, 0.1)', cursor: 'pointer' }}>Expand & Exegete</button>
+                        </div>
+                      ))}
+                    </div>
+                 </div>
+              ) : output && activeTab === 'exegesis' ? (
                 /* AI Output Render Pane */
                 <div className="glass-panel vault-stats ai-card" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
