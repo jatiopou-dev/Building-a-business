@@ -26,10 +26,8 @@ export default function Dashboard() {
     navigate('/login')
   }
 
-  const handleExportObsidian = () => {
+  const handleExport = async () => {
     if (!output) return;
-    
-    const vaultName = encodeURIComponent("The Well");
     
     let title = "Theological Insight";
     const titleMatch = output.match(/title:\s*"?([^"\n]+)"?/);
@@ -39,11 +37,29 @@ export default function Dashboard() {
       title = `${passage} - ${styleMode}`;
     }
     
-    const fileName = encodeURIComponent(title);
-    const content = encodeURIComponent(output);
-    const obsidianUri = `obsidian://new?vault=${vaultName}&file=${fileName}&content=${content}`;
+    // First try the native OS share menu (Great for Mac/iOS directly to Apple Notes/Bear/etc)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: title,
+          text: output,
+        });
+        return; // If successful, exit
+      } catch (err) {
+        console.log("Native share was cancelled or failed, falling back to download...");
+      }
+    }
     
-    window.location.href = obsidianUri;
+    // Universal Fallback: Download a perfectly formatted .md file which can be opened by ANY note app.
+    const blob = new Blob([output], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${title}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 
   const handleGenerate = async (e) => {
@@ -211,8 +227,8 @@ export default function Dashboard() {
                         Generated Output
                      </h3>
                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <button className="chip" onClick={() => navigator.clipboard.writeText(output)}>Copy Markdown</button>
-                        <button className="chip" style={{ background: 'var(--accent-neon-purple)', color: 'white', border: 'none' }} onClick={handleExportObsidian}>Send to Obsidian</button>
+                        <button className="chip" onClick={() => navigator.clipboard.writeText(output)}>Copy Text</button>
+                        <button className="chip" style={{ background: 'var(--accent-neon-purple)', color: 'white', border: 'none' }} onClick={handleExport}>Save / Export App</button>
                      </div>
                   </div>
                   <div style={{ 
